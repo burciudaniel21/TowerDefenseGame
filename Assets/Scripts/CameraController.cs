@@ -12,6 +12,11 @@ public class CameraController : MonoBehaviour
     public float maxY = 80f;
     void Update()
     {
+        if (GameManager.gameOver)
+        {
+            this.enabled = false;
+            return;
+        }
         if(Input.GetKeyDown(KeyCode.Escape)) moveMouse = !moveMouse; //disable and enable camera movement
 
         if (!moveMouse)

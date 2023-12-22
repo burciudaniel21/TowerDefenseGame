@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
@@ -9,6 +10,8 @@ public class Bullet : MonoBehaviour
     private Transform target;
     [SerializeField] float speed = 70f;
     [SerializeField] GameObject impactEffect;
+    [SerializeField] int damage = 50;
+    public float explosionRadius = 0f;
 
     public void Seek(Transform _target) 
     {  
@@ -35,13 +38,51 @@ public class Bullet : MonoBehaviour
         }
 
         transform.Translate(direction.normalized * distanceTravelThisFrame, Space.World);
+        transform.LookAt(target.position);
     }
 
     private void HitTarget()
     {
         GameObject impactEffectVariable = Instantiate(impactEffect, transform.position, transform.rotation);
-        Destroy(impactEffectVariable , 2f); 
+        Destroy(impactEffectVariable, 5f);
+
+        if (explosionRadius > 0f)
+        {
+            Explode();
+        }
+        else
+        {
+            Damage(target);
+        }
+
         Destroy(gameObject);
-        Destroy(target.gameObject);
+    }
+
+    private void Explode()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, explosionRadius);
+
+        foreach (Collider collider in colliders) 
+        {
+            if (collider.tag == "Enemy")
+            {
+                Damage(collider.transform);
+            }
+        }
+    }
+
+    private void Damage(Transform enemy)
+    {
+        Enemy e = enemy.GetComponent<Enemy>();
+        if(e != null)
+        {
+            e.TakeDamage(damage);
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, explosionRadius);
     }
 }

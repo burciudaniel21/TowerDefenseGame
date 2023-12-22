@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -5,9 +6,10 @@ using UnityEngine.UI;
 
 public class WaveSpawner : MonoBehaviour
 {
-
+    public Wave[] waves;
+    public static int enemiesAlive = 0;
     [SerializeField] Transform spawnPoint;
-    [SerializeField] Transform enemyPrefab;
+    //[SerializeField] Transform enemyPrefab;
     [SerializeField] float timeBetweenWaves = 5f;
     private float countdown = 2.5f; //time before spawning first wave
     private int waveIndex = 0;
@@ -15,6 +17,11 @@ public class WaveSpawner : MonoBehaviour
 
     private void Update()
     {
+        if(enemiesAlive > 0)
+        {
+            return;
+        }
+
         if(countdown <= 0)
         {
             StartCoroutine(SpawnWave());
@@ -23,23 +30,39 @@ public class WaveSpawner : MonoBehaviour
 
         countdown -= Time.deltaTime;
 
-        waveCountdownText.text = Mathf.Round(countdown).ToString();
+        countdown = Mathf.Clamp(countdown, 0f, Mathf.Infinity) ; //ensure countdown is never less than 0
 
+        string formattedCountdown = countdown.ToString("0.00"); //format numbers for displaying on the UI
+        waveCountdownText.text = formattedCountdown; //update on the UI
     }
 
     IEnumerator SpawnWave()
     {
-        waveIndex++;
+        PlayerStats.roundsSurvived++;
 
-        for (int i = 0; i < waveIndex; i++)
+        Wave wave = waves[waveIndex];
+
+        for (int i = 0; i < wave.count; i++)
         {
-            SpawnEnemy();
-            yield return new WaitForSeconds(0.5f); //add a delay to the spawner using Coroutine
+            SpawnEnemy(wave.enemy);
+            // Calculate the delay between spawns with an additional time delay
+            float timeDelay = 2f / wave.spawnRate; // Base delay based on spawn rate
+            float additionalDelay = 1.5f; // Additional delay between each spawn
+
+            yield return new WaitForSeconds(timeDelay + (additionalDelay * i));
+        }
+
+        waveIndex++;
+        if (waveIndex >= waves.Length && wave.count == 1)
+        {
+            Debug.Log("You won :)");
+            this.enabled = false;
         }
     }
 
-    private void SpawnEnemy()
+    private void SpawnEnemy(GameObject enemy)
     {
-        Instantiate(enemyPrefab, spawnPoint.position, spawnPoint.rotation);
+        enemiesAlive++;
+        Instantiate(enemy, spawnPoint.position, spawnPoint.rotation);
     }
 }
