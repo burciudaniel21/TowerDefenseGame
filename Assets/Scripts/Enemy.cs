@@ -7,7 +7,8 @@ public class Enemy : MonoBehaviour
     public float speed;
     public float startSpeed = 10f;
     public float startHp;
-    private float hp;
+    public float currentHp;
+    private float currentScaledUpHp;
     public int moneyGain = 50;
     [SerializeField] GameObject enemyDeathEffet;
     [SerializeField] Image enemyHpBar;
@@ -15,14 +16,20 @@ public class Enemy : MonoBehaviour
     private void Start()
     {
         speed = startSpeed;
-        hp = startHp;
+        Spawn();
+        currentScaledUpHp = currentHp;
+    }
+
+    private void Spawn()
+    {
+        currentHp = (float)(startHp * (1 + (PlayerStats.roundsSurvived * 0.1)));
     }
 
     public void TakeDamage(float damage)
     {
-        hp -= damage;
-        enemyHpBar.fillAmount = hp / startHp;
-        if (hp <= 0)
+        currentHp -= damage;
+        enemyHpBar.fillAmount = currentHp / currentScaledUpHp;
+        if (currentHp <= 0)
         {
             Die();
         }

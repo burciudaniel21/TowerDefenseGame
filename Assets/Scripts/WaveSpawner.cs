@@ -2,61 +2,47 @@ using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class WaveSpawner : MonoBehaviour
 {
     public Wave[] waves;
     public static int enemiesAlive = 0;
     [SerializeField] Transform spawnPoint;
-    //[SerializeField] Transform enemyPrefab;
     [SerializeField] float timeBetweenWaves = 5f;
-    private float countdown = 2.5f; //time before spawning first wave
-    private int waveIndex = 0;
+    private float countdown = 2.5f; // time before spawning the first wave
     [SerializeField] TMP_Text waveCountdownText;
 
-    private void Update()
+    private void Start()
     {
-        if(enemiesAlive > 0)
+        StartCoroutine(SpawnWavesForever());
+    }
+
+    IEnumerator SpawnWavesForever()
+    {
+        while (true)
         {
-            return;
+            yield return StartCoroutine(SpawnWave());
+            yield return new WaitForSeconds(timeBetweenWaves);
         }
-
-        if(countdown <= 0)
-        {
-            StartCoroutine(SpawnWave());
-            countdown = timeBetweenWaves;
-        }
-
-        countdown -= Time.deltaTime;
-
-        countdown = Mathf.Clamp(countdown, 0f, Mathf.Infinity) ; //ensure countdown is never less than 0
-
-        string formattedCountdown = countdown.ToString("0.00"); //format numbers for displaying on the UI
-        waveCountdownText.text = formattedCountdown; //update on the UI
     }
 
     IEnumerator SpawnWave()
     {
         PlayerStats.roundsSurvived++;
+        waveCountdownText.text = Convert.ToString(PlayerStats.roundsSurvived);
+        Wave wave = GetRandomWave();
 
-        Wave wave = waves[waveIndex];
+        int numberOfEnemies = UnityEngine.Random.Range(wave.minNumberOfEnemies, wave.maxNumberOfEnemies + 1);
 
-        for (int i = 0; i < wave.count; i++)
-        {
-            SpawnEnemy(wave.enemy);
-            // Calculate the delay between spawns with an additional time delay
-            float timeDelay = 2f / wave.spawnRate; // Base delay based on spawn rate
-            float additionalDelay = 1.5f; // Additional delay between each spawn
+        for (int i = 0; i < numberOfEnemies; i++)
+        {            
+            GameObject randomEnemy = wave.GetRandomEnemy();
+            SpawnEnemy(randomEnemy);
+
+            float timeDelay = 0.2f / wave.spawnRate; // Decreased time delay for faster spawning
+            float additionalDelay = 0.1f; // Decreased additional delay
 
             yield return new WaitForSeconds(timeDelay + (additionalDelay * i));
-        }
-
-        waveIndex++;
-        if (waveIndex >= waves.Length && wave.count == 1)
-        {
-            Debug.Log("You won :)");
-            this.enabled = false;
         }
     }
 
@@ -64,5 +50,11 @@ public class WaveSpawner : MonoBehaviour
     {
         enemiesAlive++;
         Instantiate(enemy, spawnPoint.position, spawnPoint.rotation);
+    }
+
+    private Wave GetRandomWave()
+    {
+        int randomIndex = UnityEngine.Random.Range(0, waves.Length);
+        return waves[randomIndex];
     }
 }
